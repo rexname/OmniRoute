@@ -7,15 +7,19 @@ import { copyToClipboard } from "@/shared/utils/clipboard";
  * Hook for copy to clipboard with feedback.
  * Uses shared copyToClipboard utility that works on both HTTP and HTTPS.
  * @param {number} resetDelay - Time in ms before resetting copied state (default: 2000)
- * @returns {{ copied: string|null, copy: (text: string, id?: string) => void }}
+ * @returns {{ copied: string|null, copy: (text: string, id?: string) => Promise<boolean> }}
  */
 export function useCopyToClipboard(resetDelay = 2000) {
-  const [copied, setCopied] = useState(null);
-  const timeoutRef = useRef(null);
+  const [copied, setCopied] = useState<string | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const copy = useCallback(
-    async (text, id = "default") => {
-      await copyToClipboard(text);
+    async (text: string, id = "default"): Promise<boolean> => {
+      const success = await copyToClipboard(text);
+
+      if (!success) {
+        return false;
+      }
 
       setCopied(id);
 
@@ -26,6 +30,8 @@ export function useCopyToClipboard(resetDelay = 2000) {
       timeoutRef.current = setTimeout(() => {
         setCopied(null);
       }, resetDelay);
+
+      return true;
     },
     [resetDelay]
   );
